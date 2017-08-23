@@ -1,0 +1,29 @@
+ansible_user : ansible
+
+host:
+  user:
+    name: ansible
+    group: ansible
+
+docker:
+  registry:
+    url: registry.wgplaas.com
+    username: wgproj
+    password: 'wgproj_0o2nasfaosfifijjlw32q44roihdffvhj'
+
+jenkins:
+  ssh:
+    id: '384ec9b0-09a6-4c41-8969-d781a08fde63'
+    passphrase: 'set-password-here'
+    encrypted_password: 'set-password-here'
+    encrypted_password_gerrit_trigger: 'set-password-here'
+  gerrit:
+    password: 'set-password-here'
+
+# TODO -mc- 20170608 Automatically set encrypted passwords for id_rsa
+
+gerrit:
+  project: 'wgplaas'
+  hostname: 'wgplaas.eastus.cloudapp.azure.com'
+  frontend_url: 'https://wgplaas.eastus.cloudapp.azure.com/'
+

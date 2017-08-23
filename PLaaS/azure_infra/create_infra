@@ -1,0 +1,139 @@
+#
+# these values determine your public name
+#
+DNS=wgplaas
+LOC=eastus
+
+RG=PLResourceGroup 
+VN=PLVNet
+SN=PLSubnet
+NSG=PLSNSG
+IP=PLDockerIP
+VM=PLDockerHost
+AV=PLAvailset
+
+setup_rg()
+{
+azure group create --name $RG --location $LOC
+}
+
+setup_network()
+{
+azure network vnet create --name $VN \
+	--resource-group $RG --location $LOC \
+	--address-prefixes 192.168.0.0/16 
+
+azure network vnet subnet create --name $SN \
+	--resource-group $RG \
+	--vnet-name $VN \
+	--address-prefix 192.168.1.0/24
+
+azure network public-ip create --name $IP \
+	--resource-group $RG \
+	--location $LOC \
+	-d  $DNS
+
+azure network nsg create --name $NSG \
+	--resource-group $RG \
+	--location $LOC 
+
+}
+
+setup_nsg()
+{
+azure network nsg create --name $NSG \
+	--resource-group $RG \
+	--location $LOC 
+
+azure network nsg rule create --name ${NSG}RuleSSH \
+	--resource-group $RG --nsg-name $NSG \
+	--protocol tcp \
+	--priority 1000 \
+	--destination-port-range 22 \
+	--access allow
+
+azure network nsg rule create --name ${NSG}RuleHTTP \
+	--resource-group $RG --nsg-name $NSG \
+	--protocol tcp \
+	--priority 200 \
+	--destination-port-range 80 \
+	--access allow
+
+azure network nsg rule create --name ${NSG}RuleHTTPS \
+	--resource-group $RG --nsg-name $NSG \
+	--protocol tcp \
+	--priority 400 \
+	--destination-port-range 443 \
+	--access allow
+
+azure network nsg rule create --name ${NSG}RuleGerrit \
+	--resource-group $RG --nsg-name $NSG \
+	--protocol tcp \
+	--priority 410 \
+	--destination-port-range 8080 \
+	--access allow
+}
+
+setup_vm()
+{
+
+NIC=myNIC
+azure network nic create --name $NIC \
+	--resource-group $RG \
+	--location $LOC \
+	--subnet-name $SN \
+	--subnet-vnet-name $VN \
+	--public-ip-name $IP \
+	--network-security-group-name $NSG
+
+azure availset create --name $AV \
+	--resource-group $RG \
+	--location $LOC 
+
+azure vm create --name $VM \
+	--resource-group $RG \
+	--location $LOC \
+	--nic-name $NIC \
+	--availset-name $AV \
+	--os-type Linux \
+	--image-urn UbuntuLTS \
+	--admin-username ansible \
+	--generate-ssh-keys
+
+#
+# note: this is a new disk, replace with vhd if reinstating with the same data
+#
+azure vm disk attach-new $RG $VM 100
+
+}
+
+setup_ssh()
+{
+#
+# TODO: chmod 400 the key
+#
+	SSHKEY=/home/ubuntu/.azure/ssh/${VM}-key.pem
+	LOCALSSH=/home/ubuntu/.ssh/ansible.key
+	cp $SSHKEY $LOCALSSH
+	chmod 400 $LOCALSSH
+}
+
+setup_rg
+setup_network
+setup_nsg
+setup_vm
+setup_ssh
+
+
+#
+# to undo all this:
+#
+##azure group delete --name $RG 
+#
+#
+#
+echo you need to install server certificates manually!
+KEY=/mnt/PLaaS/PLaaS/ansible/project_infra/files/certs/privkey.pem
+CERT=/mnt/PLaaS/PLaaS/ansible/project_infra/files/certs/fullchain.pem
+echo sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout $KEY -out $CERT
+

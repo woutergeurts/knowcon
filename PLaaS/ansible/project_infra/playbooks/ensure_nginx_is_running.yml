@@ -1,0 +1,40 @@
+---
+- hosts: PLDocker
+  gather_facts: no
+  become: true
+  tasks:
+  - file: path=/media/data/nginx/conf.d state=directory mode=0755
+  - file: path=/media/data/nginx/gerrit state=directory mode=0755
+  - file: path=/media/data/nginx/registry state=directory mode=0755
+  - file: path=/etc/letsencrypt/live/PLDockerHost state=directory mode=0755
+
+  - name: Copy nginx config
+    copy:
+      src: ../files/nginx/sites-enabled/
+      dest: /media/data/nginx/conf.d
+      owner: "{{host.user.name}}"
+      group: "{{host.user.group}}"
+      mode: 0755
+  - name: Copy certificates
+    copy:
+      src: ../files/certs/
+      dest: /etc/letsencrypt/live/PLDockerHost
+      owner: "{{host.user.name}}"
+      group: "{{host.user.group}}"
+      mode: 0755
+  - name: Create a nginx container
+    docker_container:
+      name: nginx
+      image: nginx:1.13-alpine
+      state: started
+      restart_policy: unless-stopped
+      published_ports:
+      - "443:443"
+      volumes:
+      - /media/data/nginx/conf.d:/etc/nginx/conf.d:rw
+      - /media/data/nginx/gerrit:/etc/nginx/gerrit:rw
+      - /media/data/nginx/registry:/etc/nginx/registry:rw
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      memory: 512MB
+      networks:
+      - name: network_PL

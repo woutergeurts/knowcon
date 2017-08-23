@@ -1,0 +1,25 @@
+---
+- name: "Create directory for certificate domain {{domain}}"
+  file:
+    path: "/etc/letsencrypt/live/{{domain}}.wgplaas.com"
+    state: directory
+
+- name: "Create certificate file"
+  file:
+    path: "/etc/letsencrypt/live/{{domain}}.wgplaas.com/cert.pem"
+    state: touch
+
+- name: "Inspect certificate installed: {{domain}}"
+  stat: path="/etc/letsencrypt/live/{{domain}}.wgplaas.com/cert.pem"
+  register: stat_result
+  changed_when: false
+  failed_when: false
+- name: "Create server certificate: {{domain}}"
+  command: >
+    certbot
+    certonly
+    --standalone
+    --agree-tos
+    -m myproject@cgi.com
+    -d "{{domain}}.wgplaas.com"
+  when: stat_result.stat.exists == False

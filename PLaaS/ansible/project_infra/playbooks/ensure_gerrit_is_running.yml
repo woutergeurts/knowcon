@@ -1,0 +1,104 @@
+---
+- hosts: PLDocker
+  gather_facts: no
+  become: true
+  tasks:
+  - name: Create Gerrit DB
+    docker_container:
+      name: gerrit_db
+      image: postgres:9.5-alpine
+      state: started
+      restart_policy: unless-stopped
+      volumes:
+      - /media/data/gerrit_db:/var/lib/postgresql/data:rw
+      memory: 512MB
+      networks:
+      - name: network_PL
+      env:
+        POSTGRES_USER: gerrit2
+        POSTGRES_PASSWORD: gerritpasswd
+        POSTGRES_DB: reviewdb
+  - name: Create Gerrit instance
+    docker_container:
+      name: gerrit
+      image: openfrontier/gerrit:latest
+      state: started
+      restart_policy: unless-stopped
+      memory: 1024MB
+      volumes:
+      - /media/data/gerrit:/var/gerrit/review_site:rw
+      published_ports:
+      - "29418:29418"
+      links:
+      - "gerrit_db:db"
+      networks:
+      - name: network_PL
+      env:
+        WEBURL: "{{gerrit.frontend_url}}"
+        HTTPD_LISTENURL: proxy-https://gerrit:8080
+        DATABASE_TYPE: postgresql
+        AUTH_TYPE: HTTP
+        GERRIT_INIT_ARGS: '--install-plugin=download-commands'
+
+  - name: Create empty password file directory
+    file:
+      path: /media/data/nginx/gerrit
+      state: directory
+
+  - name: Create empty password file
+    file:
+      path: /media/data/nginx/gerrit/.htpasswd
+      state: touch
+
+  - name: Inspect if jenkins user exists
+    command: htpasswd -vb /media/data/nginx/gerrit/.htpasswd jenkins "{{jenkins.gerrit.password}}"
+    register: jenkins_user_state
+    changed_when: false
+    failed_when: false
+
+  - name: Create jenkins user
+    command: htpasswd -b /media/data/nginx/gerrit/.htpasswd jenkins "{{jenkins.gerrit.password}}"
+    when: jenkins_user_state.stderr == "User jenkins not found"
+
+# TODO -mc- 20170608 Create project
+
+# TODO -mc- 20170608 Setup project properties
+#[access]
+#	inheritFrom = All-Projects
+#[project]
+#	description = Talking traffic test
+#[submit]
+#	action = rebase if necessary
+#[access "refs/*"]
+#	label-Code-Review = -2..+2 group tt
+#	submit = group tt
+#	read = group Non-Interactive Users
+#	label-Verified = -1..+1 group tt
+#[access "refs/heads/*"]
+#	push = deny group tt
+#	label-Code-Review = -1..-1 group Non-Interactive Users
+#	label-Verified = -1..+1 group Non-Interactive Users
+#[access "refs/tags/*"]
+#	pushTag = group tt
+#	pushSignedTag = group tt
+#[commentlink "jira"]
+#	match = (TT-)(\\d+)
+#	link = https://jira.tttcgi.nl/browse/TT-$2
+
+# TODO -mc- 20170608 Setup 'All-Projects' properties
+#[capability]
+#	streamEvents = group Event Streaming Users
+#	streamEvents = group Non-Interactive Users
+#[access "refs/heads/*"]
+#	push = deny group Administrators
+#	push = deny group Project Owners
+#[label "Verified"]
+#	function = MaxWithBlock
+#	value = -1 Fails
+#	value =  0 No score
+#	value = +1 Verified
+#	copyAllScoresIfNoCodeChange = true
+#	defaultValue = 0
+
+# TODO -mc- 20170608 Add jenkins user to group Non-Interactive Users
+

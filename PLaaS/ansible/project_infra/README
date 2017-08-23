@@ -1,0 +1,5 @@
+#
+# This directory holds all the ansible stuff to produce the project 
+# infrastructure, like
+#
+ansible-playbook test.yml 

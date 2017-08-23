@@ -1,0 +1,33 @@
+---
+- hosts: PLDocker
+  become: yes
+  tasks:
+  - name: Ensure PVS
+    apt: 
+      name: lvm2
+      state: present
+
+- hosts: PLDocker
+  gather_facts: no
+  become: true
+  tasks:
+
+  # Create or resize a volume group on top of /dev/sdb1 and /dev/sdc5.
+  # If, for example, we already have VG vg.dd on top of /dev/sdb1,
+  # this VG will be extended by /dev/sdc5.  Or if vg.tt was created on
+  # top of /dev/sda5, we first extend it with /dev/sdb1 and /dev/sdc5,
+  # and then reduce by /dev/sda5.
+  - name: Create Volume Group dd on /dev/sdc
+    lvg: vg=vg.dd pvs=/dev/sdc
+
+  - name: Create a logical volume with disks /dev/sdc
+    lvol: vg=vg.dd lv=dd size=100%VG
+
+  - name: Creating new filesystem on new LVM logical volume
+    filesystem: fstype=ext4 dev=/dev/vg.dd/dd
+  
+  - name: Create mount directory
+    file: path=/media/data state=directory mode=0755
+
+  - name: Mounting new filesystem
+    mount: name=/media/data src=/dev/vg.dd/dd fstype=ext4 state=mounted

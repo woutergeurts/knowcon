@@ -1,0 +1,9 @@
+---
+- hosts: PLDocker
+  gather_facts: no
+  become: true
+  tasks:
+  - name: Create PL network
+    docker_network:
+      state: present
+      name: network_PL

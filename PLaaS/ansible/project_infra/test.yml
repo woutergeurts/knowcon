@@ -1,0 +1,2 @@
+---
+- include: playbooks/ensure_servers_are_reachable.yml

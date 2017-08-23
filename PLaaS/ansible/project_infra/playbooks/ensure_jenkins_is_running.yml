@@ -1,0 +1,112 @@
+---
+- hosts: PLDocker
+  gather_facts: no
+  become: true
+  tasks:
+  - name: Create jenkins directory
+    file:
+      path: /media/data/jenkins
+      state: directory
+      mode: 0755
+      owner: 1000
+
+  - name: Create jenkins ssh directory
+    file:
+      path: /media/data/jenkins/.ssh
+      state: directory
+      mode: 0700
+      owner: 1000
+
+  - name: Create ssh key
+    command: ssh-keygen -t rsa -b 4096 -N "{{jenkins.ssh.passphrase}}" -f /media/data/jenkins/.ssh/id_rsa
+    args:
+      creates: '/media/data/jenkins/.ssh/id_rsa'
+
+  - name: Ssh key ownership
+    file:
+      path: /media/data/jenkins/.ssh/id_rsa
+      state: file
+      owner: 1000
+
+  - name: Ssh public key ownership
+    file:
+      path: /media/data/jenkins/.ssh/id_rsa.pub
+      state: file
+      owner: 1000
+
+  - name: Setup ssh credentials
+    template:
+      src: "../files/jenkins/{{item}}"
+      dest: "/media/data/jenkins/{{item}}"
+      owner: "{{host.user.name}}"
+      group: "{{host.user.group}}"
+      mode: 0644
+      force: no
+    with_items:
+    - credentials.xml
+    - gerrit-trigger.xml
+
+  - name: Copy jenkins config
+    copy:
+      src: "../files/jenkins/{{item}}"
+      dest: /media/data/jenkins
+      owner: "{{host.user.name}}"
+      group: "{{host.user.group}}"
+      mode: 0644
+      force: no
+    with_items:
+    - hudson.plugins.gradle.Gradle.xml
+    - jenkins.plugins.nodejs.tools.NodeJSInstallation.xml
+
+  - name: Create job directories
+    file:
+      path: "/media/data/jenkins/jobs/{{gerrit.project}}-{{item}}"
+      state: directory
+      owner: "{{host.user.name}}"
+      group: "{{host.user.group}}"
+      mode: 0755
+    with_items:
+    - pipeline-master-patchset-created
+    - pipeline-master-change-merged
+
+  - name: Create example jobs
+    template:
+      src: "../files/jenkins/{{item}}.xml"
+      dest: "/media/data/jenkins/jobs/{{gerrit.project}}-{{item}}/config.xml"
+      owner: "{{host.user.name}}"
+      group: "{{host.user.group}}"
+      mode: 0644
+      force: no
+    with_items:
+    - pipeline-master-patchset-created
+    - pipeline-master-change-merged
+
+# TODO -mc- 20170608 Add ssh pub key for the jenkins user in gerrit (need nginx?)
+
+  - name: Log into TT registry
+    docker_login:
+      registry: "{{docker.registry.url}}"
+      username: "{{docker.registry.username}}"
+      password: "{{docker.registry.password}}"
+
+  - name: Create Jenkins instance
+    docker_container:
+      name: jenkins
+      image: registry.tttcgi.nl/tt/tt_jenkins:2.46.3.1
+      state: started
+      restart_policy: unless-stopped
+      memory: 6144MB
+      published_ports:
+      - "18080:8080"
+      volumes:
+      - /media/data/jenkins:/var/jenkins_home:rw
+      - /var/run/docker.sock:/var/run/docker.sock
+      networks:
+      - name: network_PL
+
+# TODO -mc- 20170608 Add tools JDK: name=docker_jdk, JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
+# TODO -mc- 20170608 Can we automate initialization and admin user creation?
+
+# TODO -mc- 20170608 After initialization do a docker restart jenkins
+

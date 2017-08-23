@@ -1,0 +1,38 @@
+---
+- hosts: dev
+  gather_facts: no
+  become: true
+  tasks:
+  - file: path=/media/tt/jira state=directory mode=0755 group=1 owner=1
+  - name: Create JIRA DB
+    docker_container:
+      name: jira_db
+      image: postgres:9.5-alpine
+      state: started
+      restart_policy: unless-stopped
+      volumes:
+      - /media/tt/jira_db:/var/lib/postgresql/data:rw
+      memory: 512MB
+      networks:
+      - name: network_dev
+      env:
+        POSTGRES_USER: jira
+        POSTGRES_PASSWORD: thejirapasswd
+        POSTGRES_DB: jiradb
+  - name: Create JIRA instance
+    docker_container:
+      name: jira
+      image: cptactionhank/atlassian-jira:7.3.6
+      state: started
+      restart_policy: unless-stopped
+      memory: 2048MB
+      volumes:
+      - /media/tt/jira:/var/atlassian/jira:rw
+      links:
+      - "jira_db:db"
+      networks:
+      - name: network_dev
+      env:
+        X_PROXY_NAME: jira.tttcgi.nl
+        X_PROXY_PORT: 443
+        X_PROXY_SCHEME: https

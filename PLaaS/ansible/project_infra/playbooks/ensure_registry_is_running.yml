@@ -1,0 +1,16 @@
+---
+- hosts: PLSaaS
+  gather_facts: no
+  become: true
+  tasks:
+  - name: Create Docker Registry instance
+    docker_container:
+      name: registry
+      image: registry:2
+      state: started
+      restart_policy: unless-stopped
+      memory: 512MB
+      volumes:
+      - /media/data/registry/data:/var/lib/registry:rw
+      networks:
+      - name: network_PL

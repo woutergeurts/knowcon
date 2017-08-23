@@ -1,0 +1,6 @@
+---
+- hosts: PLDocker
+  become: yes
+  
+  roles:
+  - roles/angstwad.docker_ubuntu

@@ -1,0 +1,37 @@
+---
+- hosts: PLDocker
+  become: yes
+  tasks:
+  - name: Install software-properties-common
+    apt:
+      name: software-properties-common
+      state: present
+  - name: Add PPA certbot/certbot
+    apt_repository:
+      repo: 'ppa:certbot/certbot'
+      state: present
+  - name: Install certbot
+    apt:
+      name: certbot
+      update_cache: yes
+      state: present
+  - name: Inspect if nginx is running
+    command: docker inspect nginx --format '{''{.State.Status}''}'
+    register: service_nginx_state
+    changed_when: false
+    failed_when: false
+  - name : Stop nginx
+    docker_container:
+      name: nginx
+      state: stopped
+    when: service_nginx_state.stdout == "running"
+  - name: Install certificates
+    include: ensure_certs_are_installed.yml domain="{{item}}"
+    with_items:
+    - jira
+    - dev
+    - build
+    - review
+    - registry
+  - name: Renew certificates
+    command: certbot renew
