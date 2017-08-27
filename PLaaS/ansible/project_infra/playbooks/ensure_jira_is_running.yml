@@ -33,7 +33,7 @@
       networks:
       - name: network_PL
       env:
-        X_PROXY_NAME: {{jira.url}}
+        X_PROXY_NAME: "{{jira.proxyname}}"
         X_PROXY_PORT: 443
         X_PROXY_SCHEME: https
-	X_PATH: /jira
+        X_PATH: /jira
