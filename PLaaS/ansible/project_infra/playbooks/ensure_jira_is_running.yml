@@ -1,9 +1,9 @@
 ---
-- hosts: dev
+- hosts: PLDocker
   gather_facts: no
   become: true
   tasks:
-  - file: path=/media/tt/jira state=directory mode=0755 group=1 owner=1
+  - file: path=/media/data/jira state=directory mode=0755 group=1 owner=1
   - name: Create JIRA DB
     docker_container:
       name: jira_db
@@ -11,10 +11,10 @@
       state: started
       restart_policy: unless-stopped
       volumes:
-      - /media/tt/jira_db:/var/lib/postgresql/data:rw
+      - /media/data/jira_db:/var/lib/postgresql/data:rw
       memory: 512MB
       networks:
-      - name: network_dev
+      - name: network_PL
       env:
         POSTGRES_USER: jira
         POSTGRES_PASSWORD: thejirapasswd
@@ -27,12 +27,13 @@
       restart_policy: unless-stopped
       memory: 2048MB
       volumes:
-      - /media/tt/jira:/var/atlassian/jira:rw
+      - /media/data/jira:/var/atlassian/jira:rw
       links:
       - "jira_db:db"
       networks:
-      - name: network_dev
+      - name: network_PL
       env:
-        X_PROXY_NAME: jira.tttcgi.nl
+        X_PROXY_NAME: {{jira.url}}
         X_PROXY_PORT: 443
         X_PROXY_SCHEME: https
+	X_PATH: /jira

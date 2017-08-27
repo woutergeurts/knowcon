@@ -7,7 +7,7 @@
 ##- include: playbooks/ensure_certbot_is_installed.yml
 - include: playbooks/ensure_gerrit_is_running.yml
 ##- include: playbooks/ensure_jira_is_running.yml
-##- include: playbooks/ensure_jenkins_is_running.yml
+- include: playbooks/ensure_jenkins_is_running.yml
 - include: playbooks/ensure_nginx_is_running.yml
 
 # TODO -mc- 20170608 In all playbooks use placeholders for project specifics, like tt and tttcgi.nl

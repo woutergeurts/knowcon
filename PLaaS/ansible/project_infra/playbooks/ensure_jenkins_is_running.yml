@@ -83,16 +83,16 @@
 
 # TODO -mc- 20170608 Add ssh pub key for the jenkins user in gerrit (need nginx?)
 
-  - name: Log into TT registry
-    docker_login:
-      registry: "{{docker.registry.url}}"
-      username: "{{docker.registry.username}}"
-      password: "{{docker.registry.password}}"
-
+#  - name: Log into TT registry
+#    docker_login:
+#      registry: "{{docker.registry.url}}"
+#      username: "{{docker.registry.username}}"
+#      password: "{{docker.registry.password}}"
+#
   - name: Create Jenkins instance
     docker_container:
       name: jenkins
-      image: registry.tttcgi.nl/tt/tt_jenkins:2.46.3.1
+      image: jenkins/jenkins:latest
       state: started
       restart_policy: unless-stopped
       memory: 6144MB

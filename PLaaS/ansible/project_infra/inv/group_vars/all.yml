@@ -4,6 +4,10 @@ host:
   user:
     name: ansible
     group: ansible
+  url: 'wgplaas.eastus.cloudapp.azure.com'
+
+jira:
+   url: {{host.url}}/jira
 
 docker:
   registry:
@@ -25,5 +29,5 @@ jenkins:
 gerrit:
   project: 'wgplaas'
   hostname: 'wgplaas.eastus.cloudapp.azure.com'
-  frontend_url: 'https://wgplaas.eastus.cloudapp.azure.com/'
+  frontend_url: 'https://wgplaas.eastus.cloudapp.azure.com/gerrit'
 
