@@ -1,0 +1,18 @@
+Vagrant.configure("2") do |config|
+
+  config.vm.define "ansible_demo" do |ando|
+    ando.vm.box = "ubuntu/xenial64"
+
+    ando.vm.hostname = "dockerhost"
+    ando.vm.provision "shell", inline: <<-SHELL
+     apt-get update
+     apt-get install -y python
+SHELL
+    ando.vm.provision "ansible_local" do |ansible|
+       ansible.playbook = "playbook.yml"
+    end
+
+    ando.vm.network "forwarded_port", guest: 80, host:18080
+  end
+
+end
